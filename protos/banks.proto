@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package banks;
+
+service Bank {
+    rpc MsgDelivery (MsgReq) returns (MsgReply) {}
+    rpc Shutdown (ShutdownReq) returns (ShutdownReply) {}
+}
+
+message MsgReq {
+    string type = 1;
+    int32 id = 2;
+    string interface = 3;
+    double money = 4;
+    int32 event_id = 5;
+    int32 logical_clock = 6;
+    string comment = 7;
+}
+
+message MsgReply {
+    string type = 1;
+    int32 id = 2;
+    string interface = 3;
+    double balance = 4;
+    string result = 5;
+    int32 event_id = 6;
+    int32 logical_clock = 7;
+    string comment = 8;
+}
+
+message ShutdownReq {
+    string msg = 1;
+}
+
+message ShutdownReply {
+    string status = 1;
+}
