@@ -5,7 +5,7 @@ package banks;
 service Bank {
     rpc MsgDelivery (MsgReq) returns (MsgReply) {}
     rpc Shutdown (ShutdownReq) returns (ShutdownReply) {}
-    rpc Write (WriteReq) returns (WriteReply)
+    rpc Write (WriteReq) returns (WriteReply) {}
 }
 
 message MsgReq {
