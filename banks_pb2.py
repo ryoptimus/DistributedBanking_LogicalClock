@@ -24,21 +24,23 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x62\x61nks.proto\x12\x05\x62\x61nks\"~\n\x06MsgReq\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\x12\x11\n\tinterface\x18\x03 \x01(\t\x12\r\n\x05money\x18\x04 \x01(\x01\x12\x10\n\x08\x65vent_id\x18\x05 \x01(\x05\x12\x15\n\rlogical_clock\x18\x06 \x01(\x05\x12\x0f\n\x07\x63omment\x18\x07 \x01(\t\"\x92\x01\n\x08MsgReply\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\x12\x11\n\tinterface\x18\x03 \x01(\t\x12\x0f\n\x07\x62\x61lance\x18\x04 \x01(\x01\x12\x0e\n\x06result\x18\x05 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x06 \x01(\x05\x12\x15\n\rlogical_clock\x18\x07 \x01(\x05\x12\x0f\n\x07\x63omment\x18\x08 \x01(\t\"\x1a\n\x0bShutdownReq\x12\x0b\n\x03msg\x18\x01 \x01(\t\"\x1f\n\rShutdownReply\x12\x0e\n\x06status\x18\x01 \x01(\t2o\n\x04\x42\x61nk\x12/\n\x0bMsgDelivery\x12\r.banks.MsgReq\x1a\x0f.banks.MsgReply\"\x00\x12\x36\n\x08Shutdown\x12\x12.banks.ShutdownReq\x1a\x14.banks.ShutdownReply\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x62\x61nks.proto\x12\x05\x62\x61nks\"n\n\x05\x45vent\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\x05\x12\x15\n\rlogical_clock\x18\x04 \x01(\x05\x12\x11\n\tinterface\x18\x05 \x01(\t\x12\x0f\n\x07\x63omment\x18\x06 \x01(\t\"~\n\x06MsgReq\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\x12\x11\n\tinterface\x18\x03 \x01(\t\x12\r\n\x05money\x18\x04 \x01(\x01\x12\x10\n\x08\x65vent_id\x18\x05 \x01(\x05\x12\x15\n\rlogical_clock\x18\x06 \x01(\x05\x12\x0f\n\x07\x63omment\x18\x07 \x01(\t\"\xaf\x01\n\x08MsgReply\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\x12\x11\n\tinterface\x18\x03 \x01(\t\x12\x0f\n\x07\x62\x61lance\x18\x04 \x01(\x01\x12\x0e\n\x06result\x18\x05 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x06 \x01(\x05\x12\x15\n\rlogical_clock\x18\x07 \x01(\x05\x12\x0f\n\x07\x63omment\x18\x08 \x01(\t\x12\x1b\n\x05trace\x18\t \x03(\x0b\x32\x0c.banks.Event\"\x1a\n\x0bShutdownReq\x12\x0b\n\x03msg\x18\x01 \x01(\t\"\x1f\n\rShutdownReply\x12\x0e\n\x06status\x18\x01 \x01(\t2o\n\x04\x42\x61nk\x12/\n\x0bMsgDelivery\x12\r.banks.MsgReq\x1a\x0f.banks.MsgReply\"\x00\x12\x36\n\x08Shutdown\x12\x12.banks.ShutdownReq\x1a\x14.banks.ShutdownReply\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'banks_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_MSGREQ']._serialized_start=22
-  _globals['_MSGREQ']._serialized_end=148
-  _globals['_MSGREPLY']._serialized_start=151
-  _globals['_MSGREPLY']._serialized_end=297
-  _globals['_SHUTDOWNREQ']._serialized_start=299
-  _globals['_SHUTDOWNREQ']._serialized_end=325
-  _globals['_SHUTDOWNREPLY']._serialized_start=327
-  _globals['_SHUTDOWNREPLY']._serialized_end=358
-  _globals['_BANK']._serialized_start=360
-  _globals['_BANK']._serialized_end=471
+  _globals['_EVENT']._serialized_start=22
+  _globals['_EVENT']._serialized_end=132
+  _globals['_MSGREQ']._serialized_start=134
+  _globals['_MSGREQ']._serialized_end=260
+  _globals['_MSGREPLY']._serialized_start=263
+  _globals['_MSGREPLY']._serialized_end=438
+  _globals['_SHUTDOWNREQ']._serialized_start=440
+  _globals['_SHUTDOWNREQ']._serialized_end=466
+  _globals['_SHUTDOWNREPLY']._serialized_start=468
+  _globals['_SHUTDOWNREPLY']._serialized_end=499
+  _globals['_BANK']._serialized_start=501
+  _globals['_BANK']._serialized_end=612
 # @@protoc_insertion_point(module_scope)
