@@ -39,7 +39,7 @@ def run():
         i += 1
 
 
-    all_branch_txns = []
+    all_cust_txns = []
     for ce in customer_entries:
         customer = Customer(
             id = ce['id'],
@@ -47,34 +47,45 @@ def run():
         )
         customer.createStub()
         branch_txns = customer.executeEvents()
-        all_branch_txns.append(branch_txns)
+        all_cust_txns.append(branch_txns)
 
     time.sleep(3)
 
-    print(f'Branch transactions: {all_branch_txns}\n')
+    print(f'Branch transactions: {all_cust_txns}\n')
 
-    merged_branch_txns = {}
+    merged_cust_txns = {}
 
-    for b_txn in all_branch_txns:
-        for key, value in b_txn.items():
+    for c_txn in all_cust_txns:
+        for key, value in c_txn.items():
             # print(f'Key: {key}, value: {value}')
-            if merged_branch_txns.get(key) == None:
-                merged_branch_txns[key] = []
+            if merged_cust_txns.get(key) == None:
+                merged_cust_txns[key] = []
             for v in value:
-                merged_branch_txns[key].append(v)
+                merged_cust_txns[key].append(v)
 
     # print(f'Merged branch transactions: {merged_branch_txns}\n')
 
-    branch_output_list = []
-    for b_txn in merged_branch_txns:
-        print(f'Branch: {b_txn}, Transactions: {merged_branch_txns[b_txn]}')
-        b_id = b_txn
-        txns = merged_branch_txns[b_id]
-        branch_output_list.append({'id': b_id, 'type': 'branch', 'events': txns})
+    cust_output_list = []
+    for c_txn in merged_cust_txns:
+        # print(f'Branch: {c_txn}, Transactions: {merged_cust_txns[c_txn]}')
+        b_id = c_txn
+        txns = merged_cust_txns[b_id]
+        cust_output_list.append({'id': b_id, 'type': 'customer', 'events': txns})
 
     # Write output file
     with open('output.json', 'w') as file:
-        json.dump(branch_output_list, file, indent=2)
+        json.dump(cust_output_list, file, indent=2)
+        file.write('\n\n')
+
+    # for b_id in branch_ids:
+    #     port = 5000 + b_id
+    #     channel = grpc.insecure_channel(f'localhost:{port}')
+    #     stub = banks_pb2_grpc.BankStub(channel)
+    #     try:
+    #         response = stub.Write(banks_pb2.WriteReq(msg='init'))
+    #         print(f'Write by branch ID {b_id}: {response.status}')
+    #     except grpc.RpcError as e:
+    #         print(f'Write by branch ID {b_id} failed:\n{e}')
 
     for b_id in branch_ids:
         port = 5000 + b_id
@@ -84,7 +95,7 @@ def run():
             response = stub.Shutdown(banks_pb2.ShutdownReq(msg='init'), timeout=2.0)
             print(f'Shutdown of branch ID {b_id}: {response.status}')
         except grpc.RpcError as e:
-            print(f'Shutdown of branch ID {b_id} failed: {e}')
+            print(f'Shutdown of branch ID {b_id} failed:\n{e}')
 
 if __name__ == '__main__':
     run()

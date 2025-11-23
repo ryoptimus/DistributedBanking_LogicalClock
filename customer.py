@@ -29,6 +29,9 @@ class Customer:
         comment_str = f'event_sent from customer {self.id}'
         branch_msgs = {}
         branch_msgs[self.id] = []
+
+        cust_msgs = {}
+        cust_msgs[self.id] = []
         outgoing = []
         for event in self.events:
             e_id = event['id']
@@ -36,10 +39,10 @@ class Customer:
             print(f'Interface: {e_in}')
             print(f'Event ID: {e_id}')
             if event['interface'] == 'query':
-                
                 print('Query detected.')
                 request = banks_pb2.MsgReq(type='customer', id=self.id, interface=e_in, money=0, event_id=e_id, logical_clock=self.local_clock, comment=comment_str)
                 outgoing.append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
+                cust_msgs[self.id].append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
                 response = self.stub.MsgDelivery(request)
                 self.recvMsg.append(response)
                 print(f'Response: {response}')
@@ -49,6 +52,7 @@ class Customer:
                 print('Deposit detected.')
                 request = banks_pb2.MsgReq(type='customer', id=self.id, interface=e_in, money=event['money'], event_id=e_id, logical_clock=self.local_clock, comment=comment_str)
                 outgoing.append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
+                cust_msgs[self.id].append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
                 response = self.stub.MsgDelivery(request)
                 self.recvMsg.append(response)
                 print(f'Response: {response}')
@@ -58,9 +62,10 @@ class Customer:
                 print('Withdraw detected.')
                 request = banks_pb2.MsgReq(type='customer', id=self.id, interface=e_in, money=event['money'], event_id=e_id, logical_clock=self.local_clock, comment=comment_str)
                 outgoing.append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
+                cust_msgs[self.id].append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
                 response = self.stub.MsgDelivery(request)
                 self.recvMsg.append(response)
                 print(f'Response: {response}')
                 branch_msgs[self.id].append({'customer-request-id': response.event_id, 'interface': response.interface, 'result': response.result, 'comment': response.comment})
-        return branch_msgs
+        return cust_msgs
             
