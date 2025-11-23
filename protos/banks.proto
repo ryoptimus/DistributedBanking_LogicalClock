@@ -5,7 +5,15 @@ package banks;
 service Bank {
     rpc MsgDelivery (MsgReq) returns (MsgReply) {}
     rpc Shutdown (ShutdownReq) returns (ShutdownReply) {}
-    rpc Write (WriteReq) returns (WriteReply) {}
+}
+
+message Event {
+  int32  id = 1; 
+  string type = 2;
+  int32  event_id = 3;
+  int32  logical_clock = 4;
+  string interface = 5;
+  string comment = 6;
 }
 
 message MsgReq {
@@ -27,6 +35,8 @@ message MsgReply {
     int32 event_id = 6;
     int32 logical_clock = 7;
     string comment = 8;
+
+    repeated Event trace = 9;
 }
 
 message ShutdownReq {
@@ -34,13 +44,5 @@ message ShutdownReq {
 }
 
 message ShutdownReply {
-    string status = 1;
-}
-
-message WriteReq {
-    string msg = 1;
-}
-
-message WriteReply {
     string status = 1;
 }
