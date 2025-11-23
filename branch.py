@@ -1,3 +1,4 @@
+import json
 import threading
 
 import grpc
@@ -19,10 +20,12 @@ class Branch(banks_pb2_grpc.BankServicer):
         self.stubList = list()
         # a list of received messages used for debugging purpose
         self.recvMsg = list()
-        # a list of propagation messages between branches
-        self.propMsg = list()
 
         self.server = None
+        # a list of propagate messages
+        self.propMsg = list()
+        # store events in memory
+        self.events = list()
         # set local clock
         self.local_clock = 0
 
@@ -47,17 +50,50 @@ class Branch(banks_pb2_grpc.BankServicer):
             port = 5000 + id
             channel = grpc.insecure_channel(f'localhost:{port}')
             stub = banks_pb2_grpc.BankStub(channel)
-            self.stubList.append(stub)
+            self.stubList.append((id, stub))
+    
+    def tick(self, alt_clock=None):
+        if alt_clock == None:
+            self.local_clock += 1
+        else:
+            self.local_clock = max(self.local_clock, alt_clock) + 1
+        return self.local_clock
+
+    def logEvent(self, event_id, interface, comment):
+        event = banks_pb2.Event(
+            id=self.id,
+            event_id=event_id,
+            logical_clock=self.local_clock,
+            interface=interface,
+            comment=comment
+        )
+
+        self.events.append(event)
+        return event
 
     def Deposit(self, request):
-        comment_str = f'event_recv from {request.type} {self.id}'
+        self.tick(request.logical_clock)
+
+        trace = []
+        comment_str = f'event_recv from {request.type} {request.id}'
         self.balance += request.money
-        return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='success', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+        event = self.logEvent(request.event_id, request.interface, comment_str)
+        trace.append(event)
+        reply = banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='success', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str, trace=trace)
+        self.recvMsg.append(reply)
+        return reply
     
     def Withdraw(self, request):
-        comment_str = f'event_recv from {request.type} {self.id}'
+        self.tick(request.logical_clock)
+
+        trace = []
+        comment_str = f'event_recv from {request.type} {request.id}'
         self.balance -= request.money
-        return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='success', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+        event = self.logEvent(request.event_id, request.interface, comment_str)
+        trace.append(event)
+        reply = banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='success', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str, trace=trace)
+        self.recvMsg.append(reply)
+        return reply
 
     def Propagate(self, request):
         if request.interface == 'deposit':
@@ -66,73 +102,113 @@ class Branch(banks_pb2_grpc.BankServicer):
             return self.Propagate_Withdraw(request)
         return False
 
-# TODO: Fix this
     def Propagate_Deposit(self, request):
         success = False
+        trace = []
         
-        for stub in self.stubList:
-            comment_str = f'event_sent to branch _'
-            request = banks_pb2.MsgReq(type='branch', id=self.id, interface='propagate_deposit', money=request.money, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
-            self.propMsg.append(request)
+        for branch_id, stub in self.stubList:
+            if branch_id == self.id:
+                continue
+
+            self.tick(request.logical_clock)
+
+            comment_str = f'event_sent to branch {branch_id}'
+            event = self.logEvent(request.event_id, 'propagate_deposit', comment_str)
+            trace.append(event)
+            prop_req = banks_pb2.MsgReq(type='branch', id=self.id, interface='propagate_deposit', money=request.money, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+            self.propMsg.append(prop_req)
             try:
-                response = stub.MsgDelivery(request)
+                response = stub.MsgDelivery(prop_req)
                 self.propMsg.append(response)
-                self.recvMsg.append(response)
+                trace.extend(response.trace)
+                # self.recvMsg.append(response)
                 if response.result == 'success':
                     success = True
             except grpc.RpcError as e:
                 print(f'RPC Error: {e}')
                 success = False
 
-        return success
+        return trace, success
 
     def Propagate_Withdraw(self, request):
         success = False
+        trace = []
 
-        for stub in self.stubList:
-            comment_str = f'event_sent to branch {self.id}'
-            request = banks_pb2.MsgReq(type='branch', id=self.id, interface='propagate_withdraw', money=request.money, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
-            self.propMsg.append(request)
+        for branch_id, stub in self.stubList:
+            if branch_id == self.id:
+                continue
+
+            self.tick(request.logical_clock)
+
+            comment_str = f'event_sent to branch {branch_id}'
+            event = self.logEvent(request.event_id, 'propagate_withdraw', comment_str)
+            trace.append(event)
+            prop_req = banks_pb2.MsgReq(type='branch', id=self.id, interface='propagate_withdraw', money=request.money, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+            self.propMsg.append(prop_req)
             try:
-                response = stub.MsgDelivery(request)
+                response = stub.MsgDelivery(prop_req)
                 self.propMsg.append(response)
-                self.recvMsg.append(response)
+                trace.extend(response.trace)
+                # self.recvMsg.append(response)
                 success = True
             except grpc.RpcError as e:
                 print(f'RPC Error: {e}')
                 success = False
             
-        return success
+        return trace, success
     
     def Query(self, request):
-        comment_str = f'event_recv from {request.type} {self.id}'
-        return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='success', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+        self.tick(request.logical_clock)
+        
+        trace = []
+        comment_str = f'event_recv from {request.type} {request.id}'
+        event = self.logEvent(request.event_id, request.interface, comment_str)
+        trace.append(event)
+        reply = banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='success', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str, trace=trace)
+        self.recvMsg.append(reply)
+        return reply
     
     # Process requests from both Client and Branch
     def MsgDelivery(self, request, context):
-        comment_str = f'event_recv from {request.type} {self.id}'
+        comment_str = f'event_recv from {request.type} {request.id}'
+        trace = []
 
         # Separate logic for customer and branch as customer requests necessitate propagation
         if request.type == 'customer':
+            event = self.logEvent(request.event_id, request.interface, comment_str)
+            trace.append(event)
             if request.interface == 'deposit':
                 self.balance += request.money
-                if self.Propagate(request):
+                prop_trace, success = self.Propagate(request)
+                if success:
                     status = 'success'
                 else:
                     status = 'fail'
-                return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result=status, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+                trace.extend(prop_trace)
+                reply = banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result=status, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str, trace=trace)
+                self.recvMsg.append(reply)
+                return reply
             if request.interface == 'withdraw':
                 self.balance -= request.money
-                if self.Propagate(request):
+                prop_trace, success = self.Propagate(request)
+                if success:
                     status = 'success'
                 else:
                     status = 'fail'
-                return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result=status, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+                trace.extend(prop_trace)
+                reply = banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result=status, event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str, trace=trace)
+                self.recvMsg.append(reply)
+                return reply
             if request.interface == 'query':
                 return self.Query(request)
+        # TODO: fix it
         if request.type == 'branch':
             if request.interface == 'propagate_deposit':
+                event = self.logEvent(request.event_id, 'propagate_deposit', comment_str)
+                trace.append(event)
                 return self.Deposit(request)
             if request.interface == 'propagate_withdraw':
+                event = self.logEvent(request.event_id, 'propagate_withdraw', comment_str)
+                trace.append(event)
                 return self.Withdraw(request)
-        return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='fail', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str)
+        return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='fail', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str, trace=trace)

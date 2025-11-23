@@ -40,18 +40,22 @@ def run():
 
 
     all_cust_txns = []
+    all_traces = []
     for ce in customer_entries:
         customer = Customer(
             id = ce['id'],
             events = ce['events']
         )
         customer.createStub()
-        branch_txns = customer.executeEvents()
-        all_cust_txns.append(branch_txns)
+        cust_txns, traces = customer.executeEvents()
+        all_cust_txns.append(cust_txns)
+        all_traces.extend(traces)
+
+        time.sleep(1)
 
     time.sleep(3)
 
-    print(f'Branch transactions: {all_cust_txns}\n')
+    # print(f'Branch transactions: {all_cust_txns}\n')
 
     merged_cust_txns = {}
 
@@ -65,27 +69,37 @@ def run():
 
     # print(f'Merged branch transactions: {merged_branch_txns}\n')
 
-    cust_output_list = []
+    part_one = []
     for c_txn in merged_cust_txns:
         # print(f'Branch: {c_txn}, Transactions: {merged_cust_txns[c_txn]}')
-        b_id = c_txn
-        txns = merged_cust_txns[b_id]
-        cust_output_list.append({'id': b_id, 'type': 'customer', 'events': txns})
+        c_id = c_txn
+        txns = merged_cust_txns[c_id]
+        part_one.append({'id': c_id, 'type': 'customer', 'events': txns})
+
+    print(f'\nAll traces:\n{all_traces}')
+    branch_events = {}
+    for trace in all_traces:
+        b_id = trace.id
+        if branch_events.get(b_id) == None:
+            branch_events[b_id] = []
+        branch_events[b_id].append({
+                'customer-request-id': trace.event_id,
+                'logical_clock': trace.logical_clock,
+                'interface': trace.interface,
+                'comment': trace.comment
+        })
+
+    part_two = []
+    for b_ev in branch_events:
+        b_id = b_ev
+        evs = branch_events[b_id]
+        part_two.append({'id': b_id, 'type': 'branch', 'events': evs})
 
     # Write output file
     with open('output.json', 'w') as file:
-        json.dump(cust_output_list, file, indent=2)
+        json.dump(part_one, file, indent=2)
         file.write('\n\n')
-
-    # for b_id in branch_ids:
-    #     port = 5000 + b_id
-    #     channel = grpc.insecure_channel(f'localhost:{port}')
-    #     stub = banks_pb2_grpc.BankStub(channel)
-    #     try:
-    #         response = stub.Write(banks_pb2.WriteReq(msg='init'))
-    #         print(f'Write by branch ID {b_id}: {response.status}')
-    #     except grpc.RpcError as e:
-    #         print(f'Write by branch ID {b_id} failed:\n{e}')
+        json.dump(part_two, file, indent=2)
 
     for b_id in branch_ids:
         port = 5000 + b_id
