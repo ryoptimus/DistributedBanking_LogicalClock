@@ -52,6 +52,7 @@ class Branch(banks_pb2_grpc.BankServicer):
             stub = banks_pb2_grpc.BankStub(channel)
             self.stubList.append((id, stub))
     
+    # Ticking method (Lamport)
     def tick(self, remote_clock=None):
         if remote_clock == None:
             self.local_clock += 1
@@ -59,6 +60,7 @@ class Branch(banks_pb2_grpc.BankServicer):
             self.local_clock = max(self.local_clock, remote_clock) + 1
         return self.local_clock
 
+    # Log event for tracing (for later writes to output file)
     def logEvent(self, event_id, interface, comment):
         event = banks_pb2.Event(
             id=self.id,
@@ -107,6 +109,7 @@ class Branch(banks_pb2_grpc.BankServicer):
         trace = []
         
         for branch_id, stub in self.stubList:
+            # Don't propagate to self
             if branch_id == self.id:
                 continue
 
@@ -135,6 +138,7 @@ class Branch(banks_pb2_grpc.BankServicer):
         trace = []
 
         for branch_id, stub in self.stubList:
+            # Don't propagate to self
             if branch_id == self.id:
                 continue
 
@@ -149,7 +153,6 @@ class Branch(banks_pb2_grpc.BankServicer):
                 response = stub.MsgDelivery(prop_req)
                 self.propMsg.append(response)
                 trace.extend(response.trace)
-                # self.recvMsg.append(response)
                 success = True
             except grpc.RpcError as e:
                 print(f'RPC Error: {e}')
@@ -158,7 +161,7 @@ class Branch(banks_pb2_grpc.BankServicer):
         return trace, success
     
     def Query(self, request):
-        self.tick(request.logical_clock)
+        # No need to tick here; MsgDelivery already took care of this
 
         trace = []
         comment_str = f'event_recv from {request.type} {request.id}'
