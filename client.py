@@ -69,25 +69,43 @@ def run():
 
     # print(f'Merged branch transactions: {merged_branch_txns}\n')
 
+    # Dict for gathering events by customer-request-id (for part 3)
+    all_events = {}
+
     part_one = []
     for c_txn in merged_cust_txns:
         # print(f'Branch: {c_txn}, Transactions: {merged_cust_txns[c_txn]}')
         c_id = c_txn
         txns = merged_cust_txns[c_id]
         part_one.append({'id': c_id, 'type': 'customer', 'events': txns})
+        for txn in txns:
+            event_id = txn['customer-request-id']
+            logical_clock = txn['logical_clock']
+            interface = txn['interface']
+            comment = txn['comment']
+            if all_events.get(event_id) == None:
+                all_events[event_id] = []
+            all_events[event_id].append({'id': c_id, 'customer-request-id': event_id, 'type': 'customer', 'logical_clock': logical_clock, 'interface': interface, 'comment': comment})
 
-    print(f'\nAll traces:\n{all_traces}')
+    print(f'\nAll customer transactions: {merged_cust_txns}\n\nAll traces:\n{all_traces}')
     branch_events = {}
     for trace in all_traces:
         b_id = trace.id
+        event_id = trace.event_id
+        logical_clock = trace.logical_clock
+        interface = trace.interface
+        comment = trace.comment
         if branch_events.get(b_id) == None:
             branch_events[b_id] = []
         branch_events[b_id].append({
-                'customer-request-id': trace.event_id,
-                'logical_clock': trace.logical_clock,
-                'interface': trace.interface,
-                'comment': trace.comment
+                'customer-request-id': event_id,
+                'logical_clock': logical_clock,
+                'interface': interface,
+                'comment': comment
         })
+        if all_events.get(event_id) == None:
+            all_events[event_id] = []
+        all_events[event_id].append({'id': b_id, 'customer-request-id': event_id, 'type': 'branch', 'logical_clock': logical_clock, 'interface': interface, 'comment': comment})
 
     part_two = []
     for b_ev in branch_events:
@@ -95,11 +113,19 @@ def run():
         evs = branch_events[b_id]
         part_two.append({'id': b_id, 'type': 'branch', 'events': evs})
 
+    part_three = []
+    for e_id in all_events:
+        events = all_events[e_id]
+        for event in events:
+            part_three.append(event)
+
     # Write output file
     with open('output.json', 'w') as file:
         json.dump(part_one, file, indent=2)
         file.write('\n\n')
         json.dump(part_two, file, indent=2)
+        file.write('\n\n')
+        json.dump(part_three, file, indent=2)
 
     for b_id in branch_ids:
         port = 5000 + b_id
