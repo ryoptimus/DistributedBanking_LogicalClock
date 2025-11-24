@@ -52,11 +52,11 @@ class Branch(banks_pb2_grpc.BankServicer):
             stub = banks_pb2_grpc.BankStub(channel)
             self.stubList.append((id, stub))
     
-    def tick(self, alt_clock=None):
-        if alt_clock == None:
+    def tick(self, remote_clock=None):
+        if remote_clock == None:
             self.local_clock += 1
         else:
-            self.local_clock = max(self.local_clock, alt_clock) + 1
+            self.local_clock = max(self.local_clock, remote_clock) + 1
         return self.local_clock
 
     def logEvent(self, event_id, interface, comment):
@@ -100,7 +100,7 @@ class Branch(banks_pb2_grpc.BankServicer):
             return self.Propagate_Deposit(request)
         if request.interface == 'withdraw':
             return self.Propagate_Withdraw(request)
-        return False
+        return [], False
 
     def Propagate_Deposit(self, request):
         success = False
@@ -110,7 +110,7 @@ class Branch(banks_pb2_grpc.BankServicer):
             if branch_id == self.id:
                 continue
 
-            self.tick(request.logical_clock)
+            self.tick()
 
             comment_str = f'event_sent to branch {branch_id}'
             event = self.logEvent(request.event_id, 'propagate_deposit', comment_str)
@@ -138,7 +138,7 @@ class Branch(banks_pb2_grpc.BankServicer):
             if branch_id == self.id:
                 continue
 
-            self.tick(request.logical_clock)
+            self.tick()
 
             comment_str = f'event_sent to branch {branch_id}'
             event = self.logEvent(request.event_id, 'propagate_withdraw', comment_str)
@@ -159,7 +159,7 @@ class Branch(banks_pb2_grpc.BankServicer):
     
     def Query(self, request):
         self.tick(request.logical_clock)
-        
+
         trace = []
         comment_str = f'event_recv from {request.type} {request.id}'
         event = self.logEvent(request.event_id, request.interface, comment_str)
@@ -175,6 +175,8 @@ class Branch(banks_pb2_grpc.BankServicer):
 
         # Separate logic for customer and branch as customer requests necessitate propagation
         if request.type == 'customer':
+            self.tick(request.logical_clock)
+
             event = self.logEvent(request.event_id, request.interface, comment_str)
             trace.append(event)
             if request.interface == 'deposit':
@@ -201,14 +203,9 @@ class Branch(banks_pb2_grpc.BankServicer):
                 return reply
             if request.interface == 'query':
                 return self.Query(request)
-        # TODO: fix it
         if request.type == 'branch':
             if request.interface == 'propagate_deposit':
-                event = self.logEvent(request.event_id, 'propagate_deposit', comment_str)
-                trace.append(event)
                 return self.Deposit(request)
             if request.interface == 'propagate_withdraw':
-                event = self.logEvent(request.event_id, 'propagate_withdraw', comment_str)
-                trace.append(event)
                 return self.Withdraw(request)
         return banks_pb2.MsgReply(type='branch', id=self.id, interface=request.interface, balance=self.balance, result='fail', event_id=request.event_id, logical_clock=self.local_clock, comment=comment_str, trace=trace)
