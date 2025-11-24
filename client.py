@@ -43,7 +43,7 @@ def run():
     for ce in customer_entries:
         customer = Customer(
             id = ce['id'],
-            events = ce['events']
+            events = ce['customer-requests']
         )
         customer.createStub()
         cust_txns, traces = customer.executeEvents()
@@ -114,13 +114,16 @@ def run():
         for event in events:
             part_three.append(event)
 
+    all_parts = part_one + part_two + part_three
+
     # Write output file, part by part
     with open('output.json', 'w') as file:
-        json.dump(part_one, file, indent=2)
-        file.write('\n\n')
-        json.dump(part_two, file, indent=2)
-        file.write('\n\n')
-        json.dump(part_three, file, indent=2)
+        json.dump(all_parts, file, indent=2)
+        # json.dump(part_one, file, indent=2)
+        # file.write('\n\n')
+        # json.dump(part_two, file, indent=2)
+        # file.write('\n\n')
+        # json.dump(part_three, file, indent=2)
 
     for b_id in branch_ids:
         port = 5000 + b_id

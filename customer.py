@@ -34,7 +34,7 @@ class Customer:
         for event in self.events:
             self.local_clock += 1
 
-            e_id = event['id']
+            e_id = event['customer-request-id']
             e_in = event['interface']
 
             if event['interface'] == 'query':
