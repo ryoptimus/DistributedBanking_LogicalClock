@@ -10,7 +10,6 @@ import banks_pb2_grpc
 
 from branch import Branch
 
-remote_clock = 0
 
 def serve():
     # Check for proper number of args
