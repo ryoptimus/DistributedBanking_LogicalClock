@@ -27,50 +27,35 @@ class Customer:
             self.createStub()
         
         comment_str = f'event_sent from customer {self.id}'
-        # branch_msgs = {}
-        # branch_msgs[self.id] = []
 
         cust_msgs = {}
         cust_msgs[self.id] = []
-        # outgoing = []
         traces = []
         for event in self.events:
             self.local_clock += 1
 
             e_id = event['id']
             e_in = event['interface']
-            print(f'Interface: {e_in}')
-            print(f'Event ID: {e_id}')
-
 
             if event['interface'] == 'query':
-                print('Query detected.')
                 request = banks_pb2.MsgReq(type='customer', id=self.id, interface=e_in, money=0, event_id=e_id, logical_clock=self.local_clock, comment=comment_str)
-                # outgoing.append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
                 cust_msgs[self.id].append({'customer-request-id': request.event_id, 'logical_clock': request.logical_clock, 'interface': request.interface, 'comment': comment_str})
                 response = self.stub.MsgDelivery(request)
                 self.recvMsg.append(response)
                 traces.extend(response.trace)
-                print(f'Response: {response}')
 
             if event['interface'] == 'deposit':
-                print('Deposit detected.')
                 request = banks_pb2.MsgReq(type='customer', id=self.id, interface=e_in, money=event['money'], event_id=e_id, logical_clock=self.local_clock, comment=comment_str)
-                # outgoing.append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
                 cust_msgs[self.id].append({'customer-request-id': request.event_id, 'logical_clock': request.logical_clock, 'interface': request.interface, 'comment': comment_str})
                 response = self.stub.MsgDelivery(request)
                 self.recvMsg.append(response)
                 traces.extend(response.trace)
-                print(f'Response: {response}')
                 
             if event['interface'] == 'withdraw':
-                print('Withdraw detected.')
                 request = banks_pb2.MsgReq(type='customer', id=self.id, interface=e_in, money=event['money'], event_id=e_id, logical_clock=self.local_clock, comment=comment_str)
-                # outgoing.append({'customer-request-id': request.event_id, 'interface': request.interface, 'comment': comment_str})
                 cust_msgs[self.id].append({'customer-request-id': request.event_id, 'logical_clock': request.logical_clock, 'interface': request.interface, 'comment': comment_str})
                 response = self.stub.MsgDelivery(request)
                 self.recvMsg.append(response)
                 traces.extend(response.trace)
-                print(f'Response: {response}')
         return cust_msgs, traces
             
